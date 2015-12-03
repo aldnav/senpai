@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ user }}</title>
+</head>
+<body>
+
+	{% if poke_url %}
+	<a href="{{ poke_url }}"> Poke Smith! </a>
+	{% endif %}
+
+	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script type="text/javascript">
+		var user = "{{ user }}";
+		var wsID = null;
+		if (typeof user !== 'undefined'
+			&& user !== 'AnonymousUser') {
+			(function() {
+		        var ws = new WebSocket(
+		        	'ws://localhost:8888/ws?PROJECT_ID=channelfix');
+		        ws.onopen = function(e) {
+		        	console.info(e);
+		        };
+		        ws.onmessage = function(e) {
+		            var data = JSON.parse(e.data);
+		            if (data.type === 'registration') {
+		            	wsID = data.value;
+		            	registerClient(data.value);
+		            } else if (data.type === 'notification') {
+		            	fetchNotification(data.value);
+		            } else {
+		            	console.info(data);
+		            }
+		        };
+		        ws.onclose = function(e) {
+		        	unregisterClient(wsID);
+		        };
+		    })();
+		}
+
+		function registerClient(value) {
+			$.ajax({
+				url: 'http://localhost:5000/register-client/',
+				data: { value: value },
+				success: function(data, status, xhr) {
+					console.info(data);
+					console.info(status);
+				},
+				error: function(xhr, status, error) {
+					console.error(error);
+				}
+			});
+		}
+
+		function fetchNotification(value) {
+			$.ajax({
+				url: 'http://localhost:5000/get-notification/',
+				data: { notifID: value },
+				success: function(data, status, xhr) {
+					console.info(data);
+					console.info(status);
+					var data = JSON.parse(data);
+					console.info(data[0].fields.body);
+					alert(data[0].fields.body);
+				},
+				error: function(xhr, status, error) {
+					console.error(error);
+				}
+			});
+		}
+
+		function unregisterClient(id) {
+			$.ajax({
+				url: 'http://localhost:5000/unregister-client/',
+				data: { clientID: id },
+				success: function(data, status, xhr) {
+					console.info(data);
+					console.info(status);
+				},
+				error: function(xhr, status, error) {
+					console.error(error);
+				}
+			});
+		}
+
+	</script>
+</body>
+</html>
